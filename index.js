@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { Op } = require("sequelize");
+const multer = require('multer');
+const path = require('path');
 const Absen = require("./models/absen");
 const Kartu = require("./models/kartu");
 const Akun = require("./models/akun");
@@ -9,6 +11,30 @@ const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Directory to save uploaded files
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname); // Use the original name of the file
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  if (!file.mimetype.startsWith('image/')) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter
+});
 
 // Endpoint untuk mendapatkan semua absen
 app.get("/absen", async (req, res) => {
@@ -60,7 +86,8 @@ app.post("/absen", async (req, res) => {
 
     if (absenToday) {
       if (!absenToday.jam_pulang) {
-        (absenToday.foto_pulang = link), (absenToday.jam_pulang = new Date());
+        absenToday.foto_pulang = link;
+        absenToday.jam_pulang = new Date();
         absenToday.updated_at = new Date();
         await absenToday.save();
         return res
@@ -95,6 +122,27 @@ app.post("/absen", async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+
+// Endpoint untuk upload foto
+app.post('/foto', upload.single('imageFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded or invalid file type' });
+    }
+
+    const filePath = req.file.path;
+    console.log('File uploaded to:', filePath);
+
+    res.status(201).json({
+      message: 'File uploaded successfully',
+      file: req.file
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
 // Endpoint untuk mendapatkan absen berdasarkan ID
 app.get('/absen/:id', async (req, res) => {
     try {
@@ -109,6 +157,15 @@ app.get('/absen/:id', async (req, res) => {
       res.status(500).json({ error: 'Something went wrong' });
     }
   });
+
+// Middleware untuk menangani error dari multer
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message === 'Only image files are allowed!') {
+    res.status(400).json({ error: err.message });
+  } else {
+    next(err);
+  }
+});
 
 // Mulai server
 app.listen(port, () => {
