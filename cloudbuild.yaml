@@ -19,3 +19,6 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/absensi:latest'
+
+options:
+  logging: 'CLOUD_LOGGING_ONLY'
