@@ -5,7 +5,7 @@ steps:
     args: ['push', 'gcr.io/bekasi-keren/absensi']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
-    args: ['run', 'deploy', 'absensi', '--image', 'gcr.io/bekasi-keren/absensi', '--platform', 'managed', '--region', 'your-region']
+    args: ['run', 'deploy', 'absensi', '--image', 'gcr.io/bekasi-keren/absensi', '--platform', 'managed', '--region', 'us-central1']
 
 images:
   - 'gcr.io/bekasi-keren/absensi'
