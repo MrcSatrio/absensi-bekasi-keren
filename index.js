@@ -272,6 +272,52 @@ app.delete('/user/:id', async (req, res) => {
   }
 });
 
+app.put('/user/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, password, nama, nomor_kartu } = req.body;
+
+    // Cari akun berdasarkan id_user
+    const user = await Akun.findOne({ where: { id_user: id } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Cek apakah username sudah ada pada pengguna lain
+    const existingUser = await Akun.findOne({ where: { username, id_user: { [Op.ne]: id } } });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
+
+    // Cek apakah nomor_kartu sudah ada pada pengguna lain
+    const existingCard = await Kartu.findOne({ where: { nomor_kartu, id_kartu: { [Op.ne]: user.id_kartu } } });
+    if (existingCard) {
+      return res.status(400).json({ error: "Card number already exists" });
+    }
+
+    // Cek apakah kartu sudah ada, jika tidak buat kartu baru
+    let kartuRecord = await Kartu.findOne({ where: { nomor_kartu } });
+    if (!kartuRecord) {
+      kartuRecord = await Kartu.create({ nomor_kartu });
+    }
+
+    // Update data akun
+    user.username = username;
+    if (password) {
+      user.password = hashPassword(password); // Update password jika disediakan
+    }
+    user.nama = nama;
+    user.id_kartu = kartuRecord.id_kartu;
+
+    await user.save();
+
+    res.status(200).json({ message: "User updated successfully" });
+  } catch (error) {
+    console.error(error); // Log error untuk debugging
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 // Mulai server
 app.listen(port, () => {
   console.log(`Server berjalan di http://localhost:${port}`);
