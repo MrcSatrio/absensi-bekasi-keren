@@ -1,8 +1,8 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/bekasi-keren/absensi:latest', '.']
+    args: ['build', '-t', 'gcr.io/674733995187/absensi:latest', '.']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/bekasi-keren/absensi:latest']
+    args: ['push', 'gcr.io/674733995187/absensi:latest']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -10,13 +10,13 @@ steps:
       - |
         set -e
         gcloud run deploy absensi \
-          --image gcr.io/bekasi-keren/absensi:latest \
+          --image gcr.io/674733995187/absensi:latest \
           --platform managed \
           --region asia-southeast2 \
           --allow-unauthenticated
 
 images:
-  - 'gcr.io/bekasi-keren/absensi:latest'
+  - 'gcr.io/674733995187/absensi:latest'
 
 options:
   logging: 'CLOUD_LOGGING_ONLY'
