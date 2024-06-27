@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const { Op } = require("sequelize");
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const Absen = require("./models/absen");
 const Kartu = require("./models/kartu");
 const Akun = require("./models/akun");
@@ -141,6 +142,32 @@ app.post('/foto', upload.single('imageFile'), async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Something went wrong' });
   }
+});
+
+// Endpoint untuk mendapatkan semua gambar
+app.get('/images', (req, res) => {
+  const directoryPath = path.join(__dirname, 'uploads');
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to scan directory' });
+    }
+    const imageFiles = files.filter(file => file.match(/\.(jpg|jpeg|png|gif)$/));
+    res.status(200).json({ images: imageFiles });
+  });
+});
+
+// Endpoint untuk mendapatkan gambar berdasarkan nama file
+app.get('/images/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'uploads', filename);
+
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    res.sendFile(filePath);
+  });
 });
 
 // Endpoint untuk mendapatkan absen berdasarkan ID
