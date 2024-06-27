@@ -4,18 +4,16 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/absensi:latest']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'absensi'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/absensi:latest'
-      - '--platform'
-      - 'managed'
-      - '--region'
-      - 'asia-southeast2'
-      - '--allow-unauthenticated'
+      - '-c'
+      - |
+        set -e
+        gcloud run deploy absensi \
+          --image gcr.io/$PROJECT_ID/absensi:latest \
+          --platform managed \
+          --region asia-southeast2 \
+          --allow-unauthenticated
 
 images:
   - 'gcr.io/$PROJECT_ID/absensi:latest'
