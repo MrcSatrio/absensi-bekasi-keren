@@ -1,0 +1,9 @@
+{
+  "development": {
+    "username": "absen",
+    "password": "maLCW6FTrcP8Zrwr",
+    "database": "absen",
+    "host": "103.193.15.90",
+    "dialect": "mysql"
+  }
+}
