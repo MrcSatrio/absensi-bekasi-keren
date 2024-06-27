@@ -8,7 +8,12 @@ steps:
     args:
       - '-c'
       - |
+        set -x
         gcloud run deploy absensi --image gcr.io/bekasi-keren/absensi --platform managed --region us-central1
+        if [ $? -ne 0 ]; then
+          echo "Deployment failed"
+          exit 1
+        fi
 
 images:
   - 'gcr.io/bekasi-keren/absensi'
