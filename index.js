@@ -4,6 +4,8 @@ const { Op } = require("sequelize");
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
+const crypto = require('crypto');
 const Absen = require("./models/absen");
 const Kartu = require("./models/kartu");
 const Akun = require("./models/akun");
@@ -12,6 +14,7 @@ const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Configure multer for file uploads
@@ -36,6 +39,11 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter
 });
+
+function hashPassword(password) {
+  return crypto.createHash('md5').update(password).digest('hex');
+}
+
 
 // Endpoint untuk mendapatkan semua absen
 app.get("/absen", async (req, res) => {
@@ -191,6 +199,76 @@ app.use((err, req, res, next) => {
     res.status(400).json({ error: err.message });
   } else {
     next(err);
+  }
+});
+
+app.post('/user/register', async (req, res) => {
+  try {
+    const { nomor_kartu, username, password, nama } = req.body;
+
+    // Validasi input
+    if (!nomor_kartu || !username || !password || !nama) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Cek apakah username sudah ada
+    const existingUser = await Akun.findOne({ where: { username } });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
+
+    // Cek apakah kartu sudah ada
+    let kartuRecord = await Kartu.findOne({ where: { nomor_kartu } });
+    if (!kartuRecord) {
+      // Jika kartu tidak ada, buat kartu baru
+      kartuRecord = await Kartu.create({ nomor_kartu });
+    }
+
+    // Hash password dengan MD5
+    const hashedPassword = hashPassword(password);
+
+    // Buat akun baru
+    const newUser = await Akun.create({
+      id_kartu: kartuRecord.id_kartu,
+      id_role: 1,  // Asumsi id_role default adalah 1, Anda bisa mengubahnya sesuai kebutuhan
+      username,
+      password: hashedPassword,
+      nama
+    });
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id_user: newUser.id_user,
+        id_kartu: newUser.id_kartu,
+        id_role: newUser.id_role,
+        username: newUser.username,
+        nama: newUser.nama
+      }
+    });
+  } catch (error) {
+    console.error(error); // Log error untuk debugging
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.delete('/user/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Cari akun berdasarkan id_user
+    const user = await Akun.findOne({ where: { id_user: id } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Hapus akun
+    await user.destroy();
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error(error); // Log error untuk debugging
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
