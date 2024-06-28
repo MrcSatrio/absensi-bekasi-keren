@@ -5,8 +5,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
-const crypto = require('crypto');
 const moment = require('moment-timezone');
+const crypto = require('crypto');
 const Absen = require("./models/absen");
 const Kartu = require("./models/kartu");
 const Akun = require("./models/akun");
@@ -320,5 +320,6 @@ app.put('/user/:id', async (req, res) => {
 
 // Mulai server
 app.listen(port, () => {
+  console.log('Current Jakarta Time:', moment.tz('Asia/Jakarta').format());
   console.log(`Server berjalan di http://localhost:${port}`);
 });
