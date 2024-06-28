@@ -36,7 +36,7 @@ const Absen = sequelize.define('Absen', {
     defaultValue: Sequelize.NOW
   }
 }, {
-  timestamps: false,
+  timestamps: true,
   tableName: 'absen'
 });
 
