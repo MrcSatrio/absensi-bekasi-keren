@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const crypto = require('crypto');
+const moment = require('moment-timezone');
 const Absen = require("./models/absen");
 const Kartu = require("./models/kartu");
 const Akun = require("./models/akun");
@@ -80,8 +81,7 @@ app.post("/absen", async (req, res) => {
     }
 
     // Cek apakah sudah ada absen pada hari ini
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set waktu ke awal hari
+    const today = moment.tz('Asia/Jakarta').startOf('day').toDate();
     const absenToday = await Absen.findOne({
       where: {
         id_user: akunRecord.id_user,
@@ -91,10 +91,13 @@ app.post("/absen", async (req, res) => {
       },
     });
 
+    const currentTime = moment.tz('Asia/Jakarta').toDate();
+
     if (absenToday) {
       if (!absenToday.jam_pulang) {
         absenToday.foto_pulang = link;
-        absenToday.jam_pulang = new Date();
+        absenToday.jam_pulang = currentTime;
+        absenToday.updated_at = currentTime;
         await absenToday.save();
         return res.status(200).json({ message: "Check-out recorded", absen: absenToday });
       } else {
@@ -106,7 +109,7 @@ app.post("/absen", async (req, res) => {
       const newAbsen = await Absen.create({
         id_user: akunRecord.id_user,
         foto_masuk: link,
-        jam_masuk: new Date(),
+        jam_masuk: currentTime,
       });
 
       return res.status(201).json({ message: "Check-in recorded", absen: newAbsen });
