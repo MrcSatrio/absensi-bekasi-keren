@@ -45,8 +45,7 @@ function hashPassword(password) {
   return crypto.createHash('md5').update(password).digest('hex');
 }
 
-
-// Endpoint untuk mendapatkan semua absen
+// Endpoint to get all absences
 app.get("/absen", async (req, res) => {
   try {
     const absens = await Absen.findAll();
@@ -56,40 +55,34 @@ app.get("/absen", async (req, res) => {
   }
 });
 
-// Endpoint untuk menambah absen baru
+// Endpoint to add a new absence
 app.post("/absen", async (req, res) => {
   try {
     const { kartu, link } = req.body;
 
-    // Validasi input
+    // Input validation
     if (!kartu || !link) {
       return res.status(400).json({ error: "kartu and link are required" });
     }
 
-    // Cek apakah kartu terdapat di database
+    // Check if the card exists in the database
     const kartuRecord = await Kartu.findOne({ where: { nomor_kartu: kartu } });
     if (!kartuRecord) {
       return res.status(404).json({ error: "Kartu not found" });
     }
 
-    // Cari akun berdasarkan id_kartu
-    const akunRecord = await Akun.findOne({
-      where: { id_kartu: kartuRecord.id_kartu },
-    });
+    // Find account based on id_kartu
+    const akunRecord = await Akun.findOne({ where: { id_kartu: kartuRecord.id_kartu } });
     if (!akunRecord) {
-      return res
-        .status(404)
-        .json({ error: "Akun not found for the given kartu" });
+      return res.status(404).json({ error: "Akun not found for the given kartu" });
     }
 
-    // Cek apakah sudah ada absen pada hari ini
-    const today = moment.tz('Asia/Jakarta').startOf('day'); // Set waktu ke awal hari di zona waktu Jakarta
+    // Check if already checked in today
+    const today = moment.tz('Asia/Jakarta').startOf('day');
     const absenToday = await Absen.findOne({
       where: {
         id_user: akunRecord.id_user,
-        jam_masuk: {
-          [Op.gte]: today.toDate(),
-        },
+        jam_masuk: { [Op.gte]: today.toDate() },
       },
     });
 
@@ -99,20 +92,11 @@ app.post("/absen", async (req, res) => {
         absenToday.jam_pulang = moment.tz('Asia/Jakarta').toDate();
         absenToday.updated_at = moment.tz('Asia/Jakarta').toDate();
         await absenToday.save();
-        return res
-          .status(200)
-          .json({ message: "Check-out recorded", absen: absenToday });
+        return res.status(200).json({ message: "Check-out recorded", absen: absenToday });
       } else {
-        // Jika jam_masuk dan jam_pulang sudah ada, kembalikan pesan bahwa sudah absen hari ini
-        return res
-          .status(200)
-          .json({
-            message: "User has already checked in and out today",
-            absen: absenToday,
-          });
+        return res.status(200).json({ message: "User has already checked in and out today", absen: absenToday });
       }
     } else {
-      // Jika belum absen, masukkan absen baru ke database
       const newAbsen = await Absen.create({
         id_user: akunRecord.id_user,
         foto_masuk: link,
@@ -121,18 +105,15 @@ app.post("/absen", async (req, res) => {
         updated_at: moment.tz('Asia/Jakarta').toDate(),
       });
 
-      return res.status(201).json({
-        message: "Check-in recorded",
-        absen: newAbsen,
-      });
+      return res.status(201).json({ message: "Check-in recorded", absen: newAbsen });
     }
   } catch (error) {
-    console.error(error); // Log error untuk debugging
+    console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-// Endpoint untuk upload foto
+// Endpoint to upload a photo
 app.post('/foto', upload.single('imageFile'), async (req, res) => {
   try {
     if (!req.file) {
@@ -142,17 +123,14 @@ app.post('/foto', upload.single('imageFile'), async (req, res) => {
     const filePath = req.file.path;
     console.log('File uploaded to:', filePath);
 
-    res.status(201).json({
-      message: 'File uploaded successfully',
-      file: req.file
-    });
+    res.status(201).json({ message: 'File uploaded successfully', file: req.file });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
 
-// Endpoint untuk mendapatkan semua gambar
+// Endpoint to get all images
 app.get('/images', (req, res) => {
   const directoryPath = path.join(__dirname, 'uploads');
   fs.readdir(directoryPath, (err, files) => {
@@ -164,7 +142,7 @@ app.get('/images', (req, res) => {
   });
 });
 
-// Endpoint untuk mendapatkan gambar berdasarkan nama file
+// Endpoint to get an image by filename
 app.get('/images/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, 'uploads', filename);
@@ -178,22 +156,22 @@ app.get('/images/:filename', (req, res) => {
   });
 });
 
-// Endpoint untuk mendapatkan absen berdasarkan ID
+// Endpoint to get an absence by ID
 app.get('/absen/:id', async (req, res) => {
-    try {
-      const absen = await Absen.findByPk(req.params.id);
-      if (absen) {
-        res.json(absen);
-      } else {
-        res.status(404).json({ error: 'Absen not found' });
-      }
-    } catch (error) {
-      console.error(error); // Log error untuk debugging
-      res.status(500).json({ error: 'Something went wrong' });
+  try {
+    const absen = await Absen.findByPk(req.params.id);
+    if (absen) {
+      res.json(absen);
+    } else {
+      res.status(404).json({ error: 'Absen not found' });
     }
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
 
-// Middleware untuk menangani error dari multer
+// Error handling middleware for multer
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError || err.message === 'Only image files are allowed!') {
     res.status(400).json({ error: err.message });
@@ -202,109 +180,102 @@ app.use((err, req, res, next) => {
   }
 });
 
+// Endpoint to register a new user
 app.post('/user/register', async (req, res) => {
   try {
     const { nomor_kartu, username, password, nama } = req.body;
 
-    // Validasi input
+    // Input validation
     if (!nomor_kartu || !username || !password || !nama) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Cek apakah username sudah ada
+    // Check if username exists
     const existingUser = await Akun.findOne({ where: { username } });
     if (existingUser) {
       return res.status(400).json({ error: "Username already exists" });
     }
 
-    // Cek apakah kartu sudah ada
+    // Check if card exists
     let kartuRecord = await Kartu.findOne({ where: { nomor_kartu } });
     if (!kartuRecord) {
-      // Jika kartu tidak ada, buat kartu baru
       kartuRecord = await Kartu.create({ nomor_kartu });
     }
 
-    // Hash password dengan MD5
+    // Hash password with MD5
     const hashedPassword = hashPassword(password);
 
-    // Buat akun baru
+    // Create a new user
     const newUser = await Akun.create({
       id_kartu: kartuRecord.id_kartu,
-      id_role: 1,  // Asumsi id_role default adalah 1, Anda bisa mengubahnya sesuai kebutuhan
+      id_role: 1,  // Default id_role is 1, change as needed
       username,
       password: hashedPassword,
       nama
     });
 
-    res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id_user: newUser.id_user,
-        id_kartu: newUser.id_kartu,
-        id_role: newUser.id_role,
-        username: newUser.username,
-        nama: newUser.nama
-      }
-    });
+    res.status(201).json({ message: "User registered successfully", user: newUser });
   } catch (error) {
-    console.error(error); // Log error untuk debugging
+    console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
+// Endpoint to delete a user
 app.delete('/user/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Cari akun berdasarkan id_user
+    // Find user by id_user
     const user = await Akun.findOne({ where: { id_user: id } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Hapus akun
+    // Delete user
     await user.destroy();
 
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error(error); // Log error untuk debugging
+    console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
+// Endpoint to update a user
 app.put('/user/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { username, password, nama, nomor_kartu } = req.body;
 
-    // Cari akun berdasarkan id_user
+    // Find user by id_user
     const user = await Akun.findOne({ where: { id_user: id } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Cek apakah username sudah ada pada pengguna lain
+    // Check if username exists on another user
     const existingUser = await Akun.findOne({ where: { username, id_user: { [Op.ne]: id } } });
     if (existingUser) {
       return res.status(400).json({ error: "Username already exists" });
     }
 
-    // Cek apakah nomor_kartu sudah ada pada pengguna lain
+    // Check if card exists on another user
     const existingCard = await Kartu.findOne({ where: { nomor_kartu, id_kartu: { [Op.ne]: user.id_kartu } } });
     if (existingCard) {
       return res.status(400).json({ error: "Card number already exists" });
     }
 
-    // Cek apakah kartu sudah ada, jika tidak buat kartu baru
+    // Check if card exists, if not create new card
     let kartuRecord = await Kartu.findOne({ where: { nomor_kartu } });
     if (!kartuRecord) {
       kartuRecord = await Kartu.create({ nomor_kartu });
     }
 
-    // Update data akun
+    // Update user data
     user.username = username;
     if (password) {
-      user.password = hashPassword(password); // Update password jika disediakan
+      user.password = hashPassword(password); // Update password if provided
     }
     user.nama = nama;
     user.id_kartu = kartuRecord.id_kartu;
@@ -313,13 +284,13 @@ app.put('/user/:id', async (req, res) => {
 
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
-    console.error(error); // Log error untuk debugging
+    console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-// Mulai server
+// Start the server
 app.listen(port, () => {
   console.log('Current Jakarta Time:', moment.tz('Asia/Jakarta').format());
-  console.log(`Server berjalan di http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
