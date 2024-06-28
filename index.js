@@ -76,9 +76,7 @@ app.post("/absen", async (req, res) => {
       where: { id_kartu: kartuRecord.id_kartu },
     });
     if (!akunRecord) {
-      return res
-        .status(404)
-        .json({ error: "Akun not found for the given kartu" });
+      return res.status(404).json({ error: "Akun not found for the given kartu" });
     }
 
     // Cek apakah sudah ada absen pada hari ini
@@ -97,19 +95,11 @@ app.post("/absen", async (req, res) => {
       if (!absenToday.jam_pulang) {
         absenToday.foto_pulang = link;
         absenToday.jam_pulang = new Date();
-        absenToday.updated_at = new Date();
         await absenToday.save();
-        return res
-          .status(200)
-          .json({ message: "Check-out recorded", absen: absenToday });
+        return res.status(200).json({ message: "Check-out recorded", absen: absenToday });
       } else {
         // Jika jam_masuk dan jam_pulang sudah ada, kembalikan pesan bahwa sudah absen hari ini
-        return res
-          .status(200)
-          .json({
-            message: "User has already checked in and out today",
-            absen: absenToday,
-          });
+        return res.status(200).json({ message: "User has already checked in and out today", absen: absenToday });
       }
     } else {
       // Jika belum absen, masukkan absen baru ke database
@@ -117,20 +107,16 @@ app.post("/absen", async (req, res) => {
         id_user: akunRecord.id_user,
         foto_masuk: link,
         jam_masuk: new Date(),
-        created_at: new Date(),
-        updated_at: new Date(),
       });
 
-      return res.status(201).json({
-        message: "check-in recorded",
-        absen: newAbsen,
-      });
+      return res.status(201).json({ message: "Check-in recorded", absen: newAbsen });
     }
   } catch (error) {
     console.error(error); // Log error untuk debugging
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+
 
 // Endpoint untuk upload foto
 app.post('/foto', upload.single('imageFile'), async (req, res) => {

@@ -26,17 +26,10 @@ const Absen = sequelize.define('Absen', {
   foto_pulang: {
     type: DataTypes.STRING,
     allowNull: true
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: Sequelize.NOW
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    defaultValue: Sequelize.NOW
   }
 }, {
-  timestamps: true,
+  timestamps: true,  // Enable timestamps for createdAt and updatedAt
+  underscored: true, // Use snake_case for automatically added attributes
   tableName: 'absen'
 });
 
