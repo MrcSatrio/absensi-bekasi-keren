@@ -48,12 +48,39 @@ function hashPassword(password) {
 // Endpoint to get all absences
 app.get("/absen", async (req, res) => {
   try {
-    const absens = await Absen.findAll();
-    res.json(absens);
+    const { month } = req.query;
+    let absens;
+
+    if (month) {
+      const startOfMonth = moment(month, 'YYYY-MM').startOf('month').toDate();
+      const endOfMonth = moment(month, 'YYYY-MM').endOf('month').toDate();
+
+      absens = await Absen.findAll({
+        where: {
+          jam_masuk: {
+            [Op.between]: [startOfMonth, endOfMonth]
+          }
+        }
+      });
+
+      if (absens.length === 0) {
+        return res.status(404).json({ error: `No absences found for the month ${month}` });
+      }
+    } else {
+      absens = await Absen.findAll();
+      if (absens.length === 0) {
+        return res.status(404).json({ error: "No absences found" });
+      }
+    }
+
+    return res.json(absens);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+
+
 
 // Endpoint to add a new absence
 app.post("/absen", async (req, res) => {
