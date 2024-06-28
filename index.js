@@ -77,49 +77,60 @@ app.post("/absen", async (req, res) => {
       where: { id_kartu: kartuRecord.id_kartu },
     });
     if (!akunRecord) {
-      return res.status(404).json({ error: "Akun not found for the given kartu" });
+      return res
+        .status(404)
+        .json({ error: "Akun not found for the given kartu" });
     }
 
     // Cek apakah sudah ada absen pada hari ini
-    const today = moment.tz('Asia/Jakarta').startOf('day').toDate();
+    const today = moment.tz('Asia/Jakarta').startOf('day'); // Set waktu ke awal hari di zona waktu Jakarta
     const absenToday = await Absen.findOne({
       where: {
         id_user: akunRecord.id_user,
         jam_masuk: {
-          [Op.gte]: today,
+          [Op.gte]: today.toDate(),
         },
       },
     });
 
-    const currentTime = moment.tz('Asia/Jakarta').toDate();
-
     if (absenToday) {
       if (!absenToday.jam_pulang) {
         absenToday.foto_pulang = link;
-        absenToday.jam_pulang = currentTime;
-        absenToday.updated_at = currentTime;
+        absenToday.jam_pulang = moment.tz('Asia/Jakarta').toDate();
+        absenToday.updated_at = moment.tz('Asia/Jakarta').toDate();
         await absenToday.save();
-        return res.status(200).json({ message: "Check-out recorded", absen: absenToday });
+        return res
+          .status(200)
+          .json({ message: "Check-out recorded", absen: absenToday });
       } else {
         // Jika jam_masuk dan jam_pulang sudah ada, kembalikan pesan bahwa sudah absen hari ini
-        return res.status(200).json({ message: "User has already checked in and out today", absen: absenToday });
+        return res
+          .status(200)
+          .json({
+            message: "User has already checked in and out today",
+            absen: absenToday,
+          });
       }
     } else {
       // Jika belum absen, masukkan absen baru ke database
       const newAbsen = await Absen.create({
         id_user: akunRecord.id_user,
         foto_masuk: link,
-        jam_masuk: currentTime,
+        jam_masuk: moment.tz('Asia/Jakarta').toDate(),
+        created_at: moment.tz('Asia/Jakarta').toDate(),
+        updated_at: moment.tz('Asia/Jakarta').toDate(),
       });
 
-      return res.status(201).json({ message: "Check-in recorded", absen: newAbsen });
+      return res.status(201).json({
+        message: "Check-in recorded",
+        absen: newAbsen,
+      });
     }
   } catch (error) {
     console.error(error); // Log error untuk debugging
     res.status(500).json({ error: "Something went wrong" });
   }
 });
-
 
 // Endpoint untuk upload foto
 app.post('/foto', upload.single('imageFile'), async (req, res) => {
