@@ -60,24 +60,20 @@ app.post("/absen", async (req, res) => {
   try {
     const { kartu, link } = req.body;
 
-    // Input validation
     if (!kartu || !link) {
       return res.status(400).json({ error: "kartu and link are required" });
     }
 
-    // Check if the card exists in the database
     const kartuRecord = await Kartu.findOne({ where: { nomor_kartu: kartu } });
     if (!kartuRecord) {
       return res.status(404).json({ error: "Kartu not found" });
     }
 
-    // Find account based on id_kartu
     const akunRecord = await Akun.findOne({ where: { id_kartu: kartuRecord.id_kartu } });
     if (!akunRecord) {
       return res.status(404).json({ error: "Akun not found for the given kartu" });
     }
 
-    // Check if already checked in today
     const today = moment.tz('Asia/Jakarta').startOf('day');
     const absenToday = await Absen.findOne({
       where: {
@@ -92,9 +88,27 @@ app.post("/absen", async (req, res) => {
         absenToday.jam_pulang = moment.tz('Asia/Jakarta').toDate();
         absenToday.updated_at = moment.tz('Asia/Jakarta').toDate();
         await absenToday.save();
-        return res.status(200).json({ message: "Check-out recorded", absen: absenToday });
+        return res.status(200).json({
+          message: "Check-out recorded",
+          absen: {
+            ...absenToday.toJSON(),
+            jam_masuk: moment(absenToday.jam_masuk).tz('Asia/Jakarta').format(),
+            jam_pulang: moment(absenToday.jam_pulang).tz('Asia/Jakarta').format(),
+            updatedAt: moment(absenToday.updatedAt).tz('Asia/Jakarta').format(),
+            createdAt: moment(absenToday.createdAt).tz('Asia/Jakarta').format(),
+          }
+        });
       } else {
-        return res.status(200).json({ message: "User has already checked in and out today", absen: absenToday });
+        return res.status(200).json({
+          message: "User has already checked in and out today",
+          absen: {
+            ...absenToday.toJSON(),
+            jam_masuk: moment(absenToday.jam_masuk).tz('Asia/Jakarta').format(),
+            jam_pulang: moment(absenToday.jam_pulang).tz('Asia/Jakarta').format(),
+            updatedAt: moment(absenToday.updatedAt).tz('Asia/Jakarta').format(),
+            createdAt: moment(absenToday.createdAt).tz('Asia/Jakarta').format(),
+          }
+        });
       }
     } else {
       const newAbsen = await Absen.create({
@@ -105,13 +119,23 @@ app.post("/absen", async (req, res) => {
         updated_at: moment.tz('Asia/Jakarta').toDate(),
       });
 
-      return res.status(201).json({ message: "Check-in recorded", absen: newAbsen });
+      return res.status(201).json({
+        message: "Check-in recorded",
+        absen: {
+          ...newAbsen.toJSON(),
+          jam_masuk: moment(newAbsen.jam_masuk).tz('Asia/Jakarta').format(),
+          jam_pulang: newAbsen.jam_pulang ? moment(newAbsen.jam_pulang).tz('Asia/Jakarta').format() : null,
+          updatedAt: moment(newAbsen.updatedAt).tz('Asia/Jakarta').format(),
+          createdAt: moment(newAbsen.createdAt).tz('Asia/Jakarta').format(),
+        }
+      });
     }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+
 
 // Endpoint to upload a photo
 app.post('/foto', upload.single('imageFile'), async (req, res) => {
